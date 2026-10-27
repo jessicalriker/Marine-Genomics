@@ -1,6 +1,6 @@
 ---
 title: "Workshop 1: Introduction to the Command Line"
-author: "Your Name"
+author: "Jessica Riker"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -26,12 +26,30 @@ Replace the text below each heading with your own notes. Copy each command you r
 
 ## Basic unix commands
 
-Notes on `pwd`, `ls`, `cd` and how unix commands are put together.
+Notes on `pwd`, `ls`, `cd` and how unit commands are put together.
+
+ls - function is used to list the names of all objects, variables, data frames, and functions currently stored in your active R environment
+
+pwd - print working directory
+
+cd - change directory
 
 ## Viewing and searching files
 
 Notes on `cat`, `head`, `grep` and `man`.
 
+cat - stands for "concatenate and print"
+
+head - used to preview the first few rows or elements of a data object
+
+grep - is a built-in function used to search for specific text patterns (or regular expressions) inside a collection of text
+
+man - a Linux Manual Page Reader used in the Terminal tab inside RStudio to view documentation for operating system commands
+
 ## Sequence file formats
 
 Notes on the fasta and fastq formats.
+
+fasta - a function used to import, export, or analyze biological sequence data (such as DNA, RNA, or protein sequences stored in a .fasta file format) using R code
+
+fastq - a function used to read, write, or analyze FASTQ files—which are text files storing biological sequences (like DNA or RNA) and their corresponding quality scores—using specialized R packages like ShortRead, dada2, or microseq

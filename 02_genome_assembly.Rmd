@@ -21,6 +21,10 @@ Notes for [Workshop 2](https://mb5370.bioinformatics.guide/workshop2.html). Run 
 
 Commands run in `redbean/`.
 
+The first command takes about 30 seconds to run.
+
+It looks reasonably strong in contiguity and clean sequence representation.
+
 ## Flye assembly
 
 Commands run in `flye_genome/`.
