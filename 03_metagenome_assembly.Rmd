@@ -75,17 +75,135 @@ Questions:
 Question 3.1
 What is the size and coverage of the largest contig in the assembly?
 
+The largest contig is contig_42.
+- Length: 4,681,059 bp (approximately 4.68 Mb)
+- Coverage: 21×
+- Circular: Yes (Y)
+
 Question 3.2
 Your assembly should contain at least one (probably several) large circular contigs. Based on size and coverage can you guess which contig corresponds to the genome of the most abundant species in our mock community?
+
+Contig_42 is a likely candidate for the genome of the most abundant species in the mock community because it is a large circular contig (approximately 4.68 Mb) with relatively high sequencing coverage (21×). Higher coverage suggests that more sequencing reads originated from this organism. However, the species identity and relative abundance cannot be confirmed from contig size and coverage alone.
+
+```{bash}
+ls /pvol/data/mg/refs/*.fna
+
+cd ~/mb5370-workshops
+cat /pvol/data/mg/refs/*.fna | bioawk -c fastx -f gc.awk
+```
+
+Questions: 
+Question 3.3
+Locate two circular chromosomes for Vibrio alfacsensis in bandage. Use the outputs from gc.awk to help with this.
+
+The two sequences most likely to match the Vibrio alfacsensis chromosomes are:
+Reference accession	Length (bp)	GC content
+CP003591.1	4,681,111	58.46%
+CP045504.1	4,388,462	63.64%
+The two circular chromosomes can be identified by comparing the Flye assembly with the reference sequence lengths and GC contents. Contig_42 is a strong match to reference CP003591.1 because their lengths are nearly identical. The second chromosome should be identified by matching the remaining circular contig or contig path to the other Vibrio alfacsensis reference sequence using both length and GC content.
 
 ## Step 3: Basic assembly QC
 
 Commands run in `assembly_check/`.
 
+```{bash}
+cd ~/mb5370-workshops/assembly_check
+
+cat ../flye_metagenome/mock/assembly.fasta | bioawk -c fastx -f ../gc.awk
+
+cat ../flye_metagenome/mock/assembly.fasta | bioawk -c fastx -f ../gc.awk > assembly.gc.tsv
+```
+
+```{r}
+gc <- read_tsv("assembly_check/assembly.gc.tsv",col_names = c("#seq_name","length","GC"))
+info <- read_tsv("flye_metagenome/mock/assembly_info.txt")
+
+gc_info <- info |> 
+  left_join(gc)
+
+gc_info |> 
+  ggplot(aes(x=GC)) + geom_histogram() + ylab("Number of contigs")
+#Figure 2: Histogram of GC content values for assembled contigs in a flye assembly of the mock community dataset.
+
+gc_info |> 
+  filter(GC<0.8) |> 
+  filter(cov.<25) |> 
+  ggplot(aes(x=GC,y=cov.)) + geom_point(aes(size=length)) + ylab("Coverage depth")
+#Figure 3: Coverage and GC content of assembled contigs in the mock community assembly. Contig lengths are shown through point size.
+
+library(ggrepel)
+gc_info |> 
+  filter(GC<0.8) |> 
+  filter(cov.<25) |> 
+  ggplot(aes(x=GC,y=cov.)) + geom_point(aes(size=length)) + geom_label_repel(aes(label=`#seq_name`))
+#Figure 4: Coverage and GC content of assembled contigs in the mock community assembly. Contig lengths are shown through point size. Only contigs with less than 25x coverage and less than 80% GC content are shown.
+```
+
+Questions:
+In the plot of GC versus coverage there is a cluster of contigs with high GC content (>60%) and coverage depth around 7.5x. Which species are these likely to belong to?
+
+Characteristics of the Cluster: The cluster in question exhibits a high GC content of >60% (specifically around 63–64%) and a lower coverage depth of roughly 7.5x (which is half the coverage depth of the primary cluster at ~15x).
+
+Likely Organisms / Species: In typical microbial mock communities, co-culture datasets, or host-symbiont sequencing mixtures, distinct clusters with high GC content and lower relative coverage correspond to high-GC bacteria present at a lower relative abundance, stoichiometry, or as a secondary symbiont/contaminant. Common bacterial representatives fitting this GC profile in standard sequencing exercises include high-GC Gram-negative or Gram-positive species such as Pseudomonas aeruginosa (which has a genome-wide GC content of ~66%) or related Actinobacteria/Proteobacteria species included in the sample mixture.
+
+```{bash}
+cd ~/mb5370-workshops
+
+cat /pvol/data/mg/refs/*.fna | bioawk -c fastx -f gc.awk | awk '{sum+=$2}END{print sum}' #24095709
+```
+
+Question: 
+
+Question 3.5
+Calculate the total length of your assembly using R by taking the sum of the contig lengths column. What proportion of the reference sequence does this represent?
+
+- Total assembly length: 18,326,420 bp
+- Total reference length: 24,095,709 bp
+- Proportion represented: 0.761, or approximately 76.06%
+This means your assembly contains approximately 76.06% of the total reference sequence length. This is a comparison of total sequence lengths, not necessarily the percentage of reference bases accurately covered, because assembly and reference sequences may overlap or differ.
+
 ## Step 4: Binning
 
 Commands run in `metabat/`.
 
+```{bash}
+cd ~/mb5370-workshops/metabat
+
+cat ../flye_metagenome/mock/assembly_info.txt  | grep -v '#' | awk '{OFS="\t";print $1,$3}' > depths.txt
+
+cat depths.txt | awk '{print $1}' | xargs samtools faidx ../flye_metagenome/mock/assembly.fasta > assembly_ordered.fasta
+
+metabat2 -i assembly_ordered.fasta -a depths.txt --cvExt -o bins/metabat --seed 5
+
+grep '>' bins/*
+```
+
+
 ## Step 5: Bin quality with CheckM
 
 Commands run in `checkm/`.
+
+```{bash}
+cd ~/mb5370-workshops/checkm
+
+cp ../metabat/bins/metabat.*.fa bins/
+
+samtools faidx ../flye_metagenome/mock/assembly.fasta contig_39 > bins/contig_39.fa
+
+```
+
+```{bash}
+sbatch run_checkm.sh
+
+tail -f slurm-XXX.out
+```
+
+Question: 
+Question 3.6
+Which bin shows strain heterogenity and why?
+
+ metabat.7    31.25   
+
+Why: Strain heterogeneity occurs when duplicated marker genes in a bin are sufficiently similar to suggest that they originate from different strains of the same or closely related species.
+Evidence: metabat.7 has a contamination estimate of 0.62% and a strain heterogeneity value of 31.25%, while all other bins have 0.00% strain heterogeneity.
+Interpretation: Although the bin has high completeness (99.66%) and low contamination (0.62%), the duplicated marker genes suggest some evidence of closely related strains within the bin.
