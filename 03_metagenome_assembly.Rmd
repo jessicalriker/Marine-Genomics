@@ -1,6 +1,6 @@
 ---
 title: "Workshop 3: Metagenome Assembly"
-author: "Your Name"
+author: "Jessica Riker"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -23,9 +23,60 @@ R chunks in this file run from the top of the repository, so give file paths fro
 
 Reads are linked into `raw_data/`.
 
+```{bash}
+cd ~/mb5370-workshops/raw_data
+ln -s /pvol/data/metagenome_assembly/reads_R10_0.5.fastq.gz raw_reads.fastq.gz
+cd..
+ls -l raw_data
+```
+
+```{bash}
+zcat raw_data/raw_reads.fastq.gz | head -n 40000 | bioawk -c fastx '{print $name,length($seq)}' > read_lengths.txt
+```
+
+```{r}
+library(tidyverse)
+
+rl_data <- read_tsv("read_lengths.txt",col_names = c("id","length"), show_col_types = FALSE)
+
+ggplot(rl_data, aes(x=length/1000)) + 
+  geom_histogram(binwidth = 2) +
+  xlab("Read Length Kb") + ylab("Number of Reads")
+
+#Figure 1: Histogram of read lengths in the mock nanopore sequencing dataset
+```
+
+```{r}
+total_len <- sum(rl_data$length)
+
+rl_data |> 
+  arrange(desc(length)) |> 
+  mutate(cumsum = cumsum(length)) |> 
+  filter(cumsum>total_len/2) |> 
+  head(n=1)
+```
+
+
 ## Step 2: Assembly
 
 Commands run in `flye_metagenome/`.
+
+```{bash}
+cd ~/mb5370-workshops/flye_metagenome
+```
+
+```{bash}
+sbatch run_flye.sh
+
+tail -f slurm-355.out
+```
+
+Questions:
+Question 3.1
+What is the size and coverage of the largest contig in the assembly?
+
+Question 3.2
+Your assembly should contain at least one (probably several) large circular contigs. Based on size and coverage can you guess which contig corresponds to the genome of the most abundant species in our mock community?
 
 ## Step 3: Basic assembly QC
 
